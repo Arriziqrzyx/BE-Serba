@@ -10,20 +10,22 @@ API ini menyediakan fungsi untuk mengelola kategori, produk, memperbarui jumlah 
 
 **Deskripsi**: Menambah kategori baru ke sistem.
 
-**Body Request**:  
-...
+**Body Request**:
+
+```
 {
 "name": "Nama Kategori"
 }
-...
+```
 
-**Response (200 OK)**:  
-...
+**Response (200 OK)**:
+
+```
 {
 "message": "Kategori berhasil ditambahkan",
 "categoryId": 1
 }
-...
+```
 
 ---
 
@@ -31,8 +33,9 @@ API ini menyediakan fungsi untuk mengelola kategori, produk, memperbarui jumlah 
 
 **Deskripsi**: Mengambil daftar semua kategori.
 
-**Response (200 OK)**:  
-...
+**Response (200 OK)**:
+
+```
 [
 {
 "categoryId": 1,
@@ -43,7 +46,7 @@ API ini menyediakan fungsi untuk mengelola kategori, produk, memperbarui jumlah 
 "name": "Kedai Kopi Lain"
 }
 ]
-...
+```
 
 ---
 
@@ -55,22 +58,24 @@ API ini menyediakan fungsi untuk mengelola kategori, produk, memperbarui jumlah 
 
 - `categoryId`: ID kategori tempat produk akan ditambahkan.
 
-**Body Request**:  
-...
+**Body Request**:
+
+```
 {
 "name": "Nama Produk",
 "price": 10000,
 "photo": "url_foto"
 }
-...
+```
 
-**Response (200 OK)**:  
-...
+**Response (200 OK)**:
+
+```
 {
 "message": "Produk berhasil ditambahkan",
 "productId": 1
 }
-...
+```
 
 ---
 
@@ -82,8 +87,9 @@ API ini menyediakan fungsi untuk mengelola kategori, produk, memperbarui jumlah 
 
 - `categoryId`: ID kategori yang produk-produknya akan diambil.
 
-**Response (200 OK)**:  
-...
+**Response (200 OK)**:
+
+```
 [
 {
 "productId": 1,
@@ -100,7 +106,7 @@ API ini menyediakan fungsi untuk mengelola kategori, produk, memperbarui jumlah 
 "sold": 5
 }
 ]
-...
+```
 
 ---
 
@@ -112,21 +118,23 @@ API ini menyediakan fungsi untuk mengelola kategori, produk, memperbarui jumlah 
 
 - `productId`: ID produk yang jumlah terjualnya ingin diperbarui.
 
-**Body Request**:  
-...
+**Body Request**:
+
+```
 {
 "amountSold": 5
 }
-...
+```
 
-**Response (200 OK)**:  
-...
+**Response (200 OK)**:
+
+```
 {
 "message": "Jumlah terjual berhasil diperbarui",
 "productId": 1,
 "amountSold": 15
 }
-...
+```
 
 ---
 
@@ -138,13 +146,14 @@ API ini menyediakan fungsi untuk mengelola kategori, produk, memperbarui jumlah 
 
 - `categoryId`: ID kategori yang omzet hariannya ingin dihitung.
 
-**Response (200 OK)**:  
-...
+**Response (200 OK)**:
+
+```
 {
 "date": "2024-12-03",
 "revenue": 100000
 }
-...
+```
 
 ---
 
@@ -154,24 +163,25 @@ API ini menyediakan fungsi untuk mengelola kategori, produk, memperbarui jumlah 
 
 #### Omzet berdasarkan tanggal:
 
-...
+```
 GET http://localhost:5000/api/daily-sales?date=2024-12-06
-...
+```
 
 #### Omzet berdasarkan bulan:
 
-...
+```
 GET http://localhost:5000/api/daily-sales?month=2024-12
-...
+```
 
 #### Semua data omzet:
 
-...
+```
 GET http://localhost:5000/api/daily-sales
-...
+```
 
-**Response (200 OK)**:  
-...
+**Response (200 OK)**:
+
+```
 {
 "data": [
 {
@@ -184,7 +194,7 @@ GET http://localhost:5000/api/daily-sales
 }
 ]
 }
-...
+```
 
 ---
 
@@ -192,9 +202,9 @@ GET http://localhost:5000/api/daily-sales
 
 Pastikan Anda sudah menginstal Node.js dan `nodemon` pada sistem Anda. Jalankan perintah berikut:
 
-...
+```
 npx nodemon server.js
-...
+```
 
 ---
 
