@@ -25,7 +25,7 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("MongoDB connected"))
+  .then(() => console.log("Connected to MongoDB Atlas"))
   .catch((err) => console.error(err));
 
 // Rute dasar untuk tes
