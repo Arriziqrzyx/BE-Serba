@@ -24,18 +24,13 @@ const createProduct = async (req, res) => {
     category.products.push(newProduct._id);
     await category.save();
 
-    // res
-    //   .status(201)
-    //   .json({ message: "Product created successfully", product: newProduct });
     console.log("File received:", req.file);
     console.log("Body received:", req.body);
-    res
-      .status(200)
-      .json({
-        message: "Product added successfully",
-        data: req.body,
-        file: req.file,
-      });
+    res.status(200).json({
+      message: "Product added successfully",
+      data: req.body,
+      file: req.file,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to create product" });
@@ -133,9 +128,34 @@ const calculateDailyRevenue = async (req, res) => {
   }
 };
 
+// Tambahkan logika pada updateProductSold
+const updateBranchProductSold = async (req, res) => {
+  const { branchId, productId } = req.params;
+  const { amountSold } = req.body;
+
+  try {
+    const branch = await Branch.findById(branchId).populate("products.product");
+    if (!branch) return res.status(404).json({ message: "Branch not found" });
+
+    const productInBranch = branch.products.find(
+      (item) => item.product._id.toString() === productId
+    );
+    if (!productInBranch)
+      return res.status(404).json({ message: "Product not found in branch" });
+
+    productInBranch.sold += amountSold;
+    await branch.save();
+
+    res.status(200).json({ message: "Product sold count updated", branch });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update sold count", error });
+  }
+};
+
 module.exports = {
   createProduct,
   getProductsByCategory,
   updateProductSold,
   calculateDailyRevenue,
+  updateBranchProductSold,
 };

@@ -25,7 +25,7 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("Connected to MongoDB Atlas"))
+  .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error(err));
 
 // Rute dasar untuk tes
@@ -56,43 +56,50 @@ const saveDailyData = async () => {
       for (const productId of category.products) {
         const product = await Product.findById(productId);
 
-        // Cari penjualan hari ini
-        const todaySale = product.sales.find(
+        // Cari semua penjualan hari ini tanpa menghapus data di iterasi sebelumnya
+        const todaySales = product.sales.filter(
           (sale) => new Date(sale.date).toISOString().slice(0, 10) === today
         );
 
-        if (todaySale) {
-          const productRevenue = todaySale.amountSold * product.price;
-          totalRevenue += productRevenue;
+        if (todaySales.length > 0) {
+          // Hitung omzet berdasarkan semua penjualan hari ini
+          todaySales.forEach((sale) => {
+            const productRevenue = sale.amountSold * product.price;
+            totalRevenue += productRevenue;
 
-          // Tambahkan detail produk ke array
-          details.push({
-            productName: product.name,
-            amountSold: todaySale.amountSold,
-            revenue: productRevenue,
+            // Tambahkan detail produk
+            details.push({
+              productName: product.name,
+              amountSold: sale.amountSold,
+              revenue: productRevenue,
+            });
           });
 
-          // Reset jumlah terjual produk
-          product.sold = 0;
+          // Hapus data penjualan hari ini dari produk
           product.sales = product.sales.filter(
             (sale) => new Date(sale.date).toISOString().slice(0, 10) !== today
           );
+
+          // Reset jumlah terjual
+          product.sold = 0;
           await product.save();
         }
       }
 
       // Simpan data omzet harian ke koleksi DailySales
-      const dailySale = new DailySales({
-        date: today,
-        category: category.name,
-        totalRevenue,
-        details,
-      });
-      await dailySale.save();
+      if (totalRevenue >= 0) {
+        const dailySale = new DailySales({
+          date: today,
+          category: category.name,
+          totalRevenue,
+          details,
+        });
+        await dailySale.save();
 
-      console.log(
-        `Omzet ${category.name} pada ${today}: ${totalRevenue}, disimpan ke DailySales`
-      );
+        console.log(
+          `Omzet ${category.name} pada ${today}: ${totalRevenue}, disimpan ke DailySales`
+        );
+      }
     }
 
     console.log(`Data penjualan untuk tanggal ${today} telah disimpan.`);
@@ -105,6 +112,6 @@ const saveDailyData = async () => {
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Jadwalkan tugas setiap jam 23:00
-cron.schedule("0 23 * * *", saveDailyData);
+cron.schedule("59 59 23 * * *", saveDailyData);
 
 // saveDailyData(); //Test Reset harian manual

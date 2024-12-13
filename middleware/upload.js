@@ -4,7 +4,7 @@ const path = require("path");
 // Tentukan penyimpanan file
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/"); // Tentukan folder tempat gambar disimpan
+    cb(null, "uploads/products"); // Tentukan folder tempat gambar disimpan
   },
   filename: (req, file, cb) => {
     cb(
