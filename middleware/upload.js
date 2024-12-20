@@ -1,37 +1,63 @@
+// middleware/upload.js
+
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
 
-// Tentukan penyimpanan file
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/products"); // Tentukan folder tempat gambar disimpan
-  },
-  filename: (req, file, cb) => {
-    cb(
-      null,
-      Date.now() + path.extname(file.originalname) // Nama file unik berdasarkan waktu
-    );
-  },
-});
-
-// Filter untuk menerima hanya file gambar
-const fileFilter = (req, file, cb) => {
-  const filetypes = /jpeg|jpg|png|gif/;
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = filetypes.test(file.mimetype);
-
-  if (extname && mimetype) {
-    return cb(null, true); // File diterima
-  } else {
-    cb(new Error("Only image files are allowed!"), false); // Menolak file selain gambar
+// Membuat folder secara otomatis jika belum ada
+const createFolderIfNotExists = (folderPath) => {
+  if (!fs.existsSync(folderPath)) {
+    fs.mkdirSync(folderPath, { recursive: true });
   }
 };
 
-// Setup multer dengan konfigurasi yang telah dibuat
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // Maksimal ukuran file 5MB
+// Storage untuk kategori icon
+const iconStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const folderPath = "uploads/icons";
+    createFolderIfNotExists(folderPath); // Buat folder jika belum ada
+    cb(null, folderPath);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
 });
 
-module.exports = upload;
+// Storage untuk foto produk
+const productStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const folderPath = "uploads/products";
+    createFolderIfNotExists(folderPath); // Buat folder jika belum ada
+    cb(null, folderPath);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+
+// Filter untuk memvalidasi hanya file gambar yang diperbolehkan
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif/;
+  const extname = allowedTypes.test(
+    path.extname(file.originalname).toLowerCase()
+  );
+  const mimetype = allowedTypes.test(file.mimetype);
+
+  console.log("File being uploaded:", {
+    originalname: file.originalname,
+    mimetype: file.mimetype,
+    extname: path.extname(file.originalname),
+  });
+
+  if (extname && mimetype) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only images are allowed!"));
+  }
+};
+
+// Middleware untuk upload
+const uploadIcon = multer({ storage: iconStorage, fileFilter });
+const uploadProductPhoto = multer({ storage: productStorage, fileFilter });
+
+module.exports = { uploadIcon, uploadProductPhoto };

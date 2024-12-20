@@ -1,20 +1,21 @@
+// routes/productRoutes.js
 const express = require("express");
-const upload = require("../middleware/upload"); // Import middleware multer
 const {
   createProduct,
-  getProductsByCategory,
-  updateProductSold,
-  calculateDailyRevenue,
+  getProductsByCategoryOrBranch,
+  deleteProduct,
 } = require("../controllers/productController");
+const { uploadProductPhoto } = require("../middleware/upload");
 
 const router = express.Router();
 
-// Endpoint untuk produk
-router.post("/:categoryId", upload.single("photo"), createProduct); // "photo" adalah nama field untuk gambar
-router.get("/:categoryId", getProductsByCategory); // Mendapatkan semua produk dalam kategori
-// Endpoint untuk memperbarui jumlah terjual
-router.put("/sold/:productId", updateProductSold);
-// Endpoint untuk menghitung omzet harian
-router.get("/revenue/:categoryId", calculateDailyRevenue);
+// Endpoint untuk tambah produk baru
+router.post("/", uploadProductPhoto.single("photo"), createProduct);
+
+// Endpoint untuk ambil produk berdasarkan kategori/cabang
+router.get("/:id/:model", getProductsByCategoryOrBranch);
+
+// Endpoint untuk hapus produk
+router.delete("/:id", deleteProduct);
 
 module.exports = router;

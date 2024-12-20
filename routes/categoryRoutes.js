@@ -1,29 +1,22 @@
+// routes/categoryRoutes.js
+
 const express = require("express");
-const multer = require("multer");
-const path = require("path");
 const {
-  createCategory,
-  getCategories,
+  getAllCategories,
+  addCategory,
   getCategoryById,
 } = require("../controllers/categoryController");
+const { uploadIcon } = require("../middleware/upload");
 
 const router = express.Router();
 
-// Set up Multer storage untuk menyimpan file gambar di folder 'uploads/icons'
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/icons/"); // Tentukan folder tempat gambar disimpan
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // Buat nama file unik
-  },
-});
+// Route untuk mendapatkan semua kategori
+router.get("/", getAllCategories);
 
-const upload = multer({ storage: storage });
+// Route untuk mendapatkan kategori by id
+router.get("/:categoryId", getCategoryById);
 
-// Endpoint untuk kategori
-router.post("/", upload.single("icon"), createCategory); // Menambahkan kategori
-router.get("/", getCategories); // Mendapatkan semua kategori
-router.get("/:categoryId", getCategoryById); // Mendapatkan kategori berdasarkan categoryId
+// Route untuk menambahkan kategori baru dengan upload icon
+router.post("/", uploadIcon.single("icon"), addCategory);
 
 module.exports = router;

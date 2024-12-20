@@ -1,161 +1,110 @@
-const Product = require("../models/Product");
-const Category = require("../models/Category");
+// controllers/productController.js
+const { Product, Category, Branch } = require("../models_schema");
+const mongoose = require("mongoose"); // Tambahkan ini
+const { ObjectId } = mongoose.Types;
 
-// Membuat produk baru dalam kategori tertentu
+// Tambah produk baru
 const createProduct = async (req, res) => {
   try {
-    const { name, price } = req.body;
-    const { categoryId } = req.params;
-    const photo = req.file ? req.file.path : null; // Ambil path gambar dari upload
+    const { name, price, categoryOrBranchId, categoryOrBranchModel } = req.body;
 
-    // Pastikan gambar ada jika tidak ditambahkan
-    if (!photo) {
-      return res.status(400).json({ error: "Product image is required" });
+    // Validasi model referensi
+    if (!["Category", "Branch"].includes(categoryOrBranchModel)) {
+      return res.status(400).json({ message: "Invalid categoryOrBranchModel" });
     }
 
-    const newProduct = new Product({ name, price, photo });
-    await newProduct.save();
-
-    // Menambahkan produk ke kategori yang sesuai
-    const category = await Category.findById(categoryId);
-    if (!category) {
-      return res.status(404).json({ error: "Category not found" });
+    // Cek apakah referensi kategori/cabang valid
+    const refModel = categoryOrBranchModel === "Category" ? Category : Branch;
+    const reference = await refModel.findById(categoryOrBranchId);
+    if (!reference) {
+      return res
+        .status(404)
+        .json({ message: `${categoryOrBranchModel} not found` });
     }
-    category.products.push(newProduct._id);
-    await category.save();
 
-    console.log("File received:", req.file);
-    console.log("Body received:", req.body);
-    res.status(200).json({
-      message: "Product added successfully",
-      data: req.body,
-      file: req.file,
+    // Buat produk baru
+    const product = new Product({
+      name,
+      price,
+      photo: req.file ? req.file.path : null, // Gunakan path file
+      categoryOrBranchId,
+      categoryOrBranchModel,
     });
+
+    console.log("Saving product:", product); // Log produk sebelum disimpan
+    await product.save();
+    res.status(201).json({ message: "Product created successfully", product });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to create product" });
+    console.error("Error creating product:", error.message); // Log detail error
+    res
+      .status(500)
+      .json({ message: "Error creating product", error: error.message });
   }
 };
 
-// Mendapatkan semua produk dalam kategori
-const getProductsByCategory = async (req, res) => {
+// Ambil semua produk berdasarkan kategori/cabang
+const getProductsByCategoryOrBranch = async (req, res) => {
   try {
-    const { categoryId } = req.params;
-    const products = await Product.find({
-      _id: { $in: (await Category.findById(categoryId)).products },
-    });
+    const { id, model } = req.params;
+
+    // console.log("Fetching products for:", { id, model });
+
+    const products = await Product.aggregate([
+      {
+        $match: {
+          categoryOrBranchId: new ObjectId(id), // Konversi id ke ObjectId
+          categoryOrBranchModel: model,
+        },
+      },
+      {
+        $lookup: {
+          from: "soldproducts", // Koleksi soldProduct
+          localField: "_id", // Field di koleksi Product
+          foreignField: "productId", // Field referensi di SoldProduct
+          as: "soldData", // Alias untuk data sold
+        },
+      },
+      {
+        $addFields: {
+          sold: { $sum: "$soldData.amountSold" }, // Hitung total penjualan
+        },
+      },
+      {
+        $project: {
+          soldData: 0, // Jangan tampilkan detail soldData (opsional)
+        },
+      },
+    ]);
+
+    // console.log("Aggregated Products:", products);
     res.status(200).json(products);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch products" });
+    console.error("Error fetching products:", error.message);
+    res.status(500).json({ message: "Error fetching products" });
   }
 };
 
-// Perbarui Jumlah Terjual Produk
-const updateProductSold = async (req, res) => {
+// Hapus produk
+const deleteProduct = async (req, res) => {
   try {
-    const { productId } = req.params;
-    const { amountSold } = req.body;
+    const { id } = req.params;
 
-    // Validasi jumlah yang ditambahkan
-    if (!amountSold || amountSold <= 0) {
-      return res.status(400).json({ error: "Invalid sold amount" });
-    }
-
-    // Cari produk dan perbarui jumlah terjual
-    const product = await Product.findById(productId);
+    // Hapus produk berdasarkan ID
+    const product = await Product.findByIdAndDelete(id);
     if (!product) {
-      return res.status(404).json({ error: "Product not found" });
+      return res.status(404).json({ message: "Product not found" });
     }
 
-    product.sold += amountSold;
-
-    // Simpan penjualan harian
-    const today = new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
-    const existingSale = product.sales.find((sale) => sale.date === today);
-
-    if (existingSale) {
-      existingSale.amountSold += amountSold;
-    } else {
-      product.sales.push({ date: today, amountSold });
-    }
-
-    await product.save();
+    res.status(200).json({ message: "Product deleted successfully", product });
+  } catch (error) {
     res
-      .status(200)
-      .json({ message: "Product sold count updated successfully", product });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to update sold count" });
-  }
-};
-
-// Hitung Omzet Harian
-const calculateDailyRevenue = async (req, res) => {
-  try {
-    const { categoryId } = req.params;
-
-    // Cari kategori dan produk terkait
-    const category = await Category.findById(categoryId).populate("products");
-    if (!category) {
-      return res.status(404).json({ error: "Category not found" });
-    }
-
-    const today = new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
-    let totalRevenue = 0;
-
-    // Hitung omzet dari produk-produk dalam kategori
-    for (const productId of category.products) {
-      const product = await Product.findById(productId);
-
-      // Gunakan filter untuk mendapatkan penjualan hari ini
-      const todaySales = product.sales.filter((sale) => {
-        const saleDate = new Date(sale.date).toISOString().slice(0, 10);
-        return saleDate === today;
-      });
-
-      // Hitung omzet berdasarkan penjualan hari ini
-      if (todaySales.length > 0) {
-        totalRevenue += todaySales.reduce(
-          (sum, sale) => sum + sale.amountSold * product.price,
-          0
-        );
-      }
-    }
-
-    res.status(200).json({ date: today, revenue: totalRevenue });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Failed to calculate daily revenue" });
-  }
-};
-
-// Tambahkan logika pada updateProductSold
-const updateBranchProductSold = async (req, res) => {
-  const { branchId, productId } = req.params;
-  const { amountSold } = req.body;
-
-  try {
-    const branch = await Branch.findById(branchId).populate("products.product");
-    if (!branch) return res.status(404).json({ message: "Branch not found" });
-
-    const productInBranch = branch.products.find(
-      (item) => item.product._id.toString() === productId
-    );
-    if (!productInBranch)
-      return res.status(404).json({ message: "Product not found in branch" });
-
-    productInBranch.sold += amountSold;
-    await branch.save();
-
-    res.status(200).json({ message: "Product sold count updated", branch });
-  } catch (error) {
-    res.status(500).json({ message: "Failed to update sold count", error });
+      .status(500)
+      .json({ message: "Error deleting product", error: error.message });
   }
 };
 
 module.exports = {
   createProduct,
-  getProductsByCategory,
-  updateProductSold,
-  calculateDailyRevenue,
-  updateBranchProductSold,
+  getProductsByCategoryOrBranch,
+  deleteProduct,
 };
