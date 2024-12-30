@@ -1,5 +1,5 @@
 // controllers/productController.js
-const { Product, Category, Branch } = require("../models_schema");
+const { Product, Category, Branch } = require("../models/models_schema");
 const mongoose = require("mongoose"); // Tambahkan ini
 const { ObjectId } = mongoose.Types;
 

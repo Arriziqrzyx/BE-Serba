@@ -1,6 +1,6 @@
 // controllers/categoryController.js
 
-const { Category, Branch } = require("../models_schema"); // Pastikan file ini berada di lokasi yang benar
+const { Category, Branch } = require("../models/models_schema"); // Pastikan file ini berada di lokasi yang benar
 
 // Ambil semua kategori dengan properti hasBranch
 const getAllCategories = async (req, res) => {

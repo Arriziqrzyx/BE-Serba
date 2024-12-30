@@ -1,7 +1,13 @@
-const { Product, Branch, SoldProduct, NetIncome } = require("../models_schema");
+const {
+  Product,
+  Branch,
+  SoldProduct,
+  NetIncome,
+  Category,
+} = require("../models/models_schema");
 const mongoose = require("mongoose");
 const ObjectId = mongoose.Types.ObjectId;
-const { UnexpectedExpense } = require("../models_schema");
+const { UnexpectedExpense } = require("../models/models_schema");
 
 // Total pendapatan per kategori atau branch
 exports.getIncomeByCategoryOrBranch = async (req, res) => {
@@ -22,11 +28,11 @@ exports.getIncomeByCategoryOrBranch = async (req, res) => {
     });
 
     // Hitung total pendapatan
-    let totalIncome = 0;
+    let income = 0;
     soldProducts.forEach((sold) => {
       const product = products.find((p) => p._id.equals(sold.productId));
       if (product) {
-        totalIncome += sold.amountSold * product.price;
+        income += sold.amountSold * product.price;
       }
     });
 
@@ -41,18 +47,18 @@ exports.getIncomeByCategoryOrBranch = async (req, res) => {
       return sum + expense.amount;
     }, 0);
 
-    // Kurangi total pendapatan dengan total biaya tak terduga
-    const netIncome = totalIncome - totalExpenses;
+    // Hitung pendapatan bersih
+    const totalIncome = income + totalExpenses;
 
     // Simpan ke koleksi NetIncome
     const today = new Date().toISOString().split("T")[0]; // Format YYYY-MM-DD
     await NetIncome.findOneAndUpdate(
       { categoryOrBranchId: id, categoryOrBranchModel: model, date: today },
-      { totalIncome: netIncome, totalExpenses },
+      { income, totalExpenses, totalIncome },
       { upsert: true, new: true }
     );
 
-    res.json({ netIncome, totalIncome, totalExpenses });
+    res.json({ income, totalExpenses, totalIncome });
   } catch (error) {
     console.error("Error calculating income:", error.message);
     res.status(500).json({ message: "Gagal menghitung pendapatan" });
@@ -111,5 +117,117 @@ exports.getTotalIncomeAllCategories = async (req, res) => {
       error.message
     );
     res.status(500).json({ message: "Gagal menghitung total pendapatan" });
+  }
+};
+
+// Inisialisasi semua data NetIncome saat server berjalan
+exports.calculateNetIncomeForAll = async () => {
+  try {
+    const today = new Date().toISOString().split("T")[0]; // Format YYYY-MM-DD
+
+    const categories = await Category.find({});
+    const branches = await Branch.find({});
+
+    // Proses kategori
+    for (const category of categories) {
+      const products = await Product.find({
+        categoryOrBranchId: category._id,
+        categoryOrBranchModel: "Category",
+      });
+
+      const productIds = products.map((product) => product._id);
+
+      const soldProducts = await SoldProduct.find({
+        productId: { $in: productIds },
+      });
+
+      // Hitung total pendapatan
+      let income = 0;
+      soldProducts.forEach((sold) => {
+        const product = products.find((p) => p._id.equals(sold.productId));
+        if (product) {
+          income += sold.amountSold * product.price;
+        }
+      });
+
+      // Hitung total biaya tak terduga
+      const unexpectedExpenses = await UnexpectedExpense.find({
+        categoryOrBranchId: category._id,
+        categoryOrBranchModel: "Category",
+      });
+
+      const totalExpenses = unexpectedExpenses.reduce((sum, expense) => {
+        return sum + expense.amount;
+      }, 0);
+
+      // Hitung pendapatan bersih
+      const totalIncome = income - totalExpenses;
+
+      // Simpan ke NetIncome
+      if (income !== 0 || totalExpenses !== 0) {
+        await NetIncome.findOneAndUpdate(
+          {
+            categoryOrBranchId: category._id,
+            categoryOrBranchModel: "Category",
+            date: today,
+          },
+          { income, totalExpenses, totalIncome },
+          { upsert: true, new: true }
+        );
+      }
+    }
+
+    // Proses branch
+    for (const branch of branches) {
+      const products = await Product.find({
+        categoryOrBranchId: branch._id,
+        categoryOrBranchModel: "Branch",
+      });
+
+      const productIds = products.map((product) => product._id);
+
+      const soldProducts = await SoldProduct.find({
+        productId: { $in: productIds },
+      });
+
+      // Hitung total pendapatan
+      let income = 0;
+      soldProducts.forEach((sold) => {
+        const product = products.find((p) => p._id.equals(sold.productId));
+        if (product) {
+          income += sold.amountSold * product.price;
+        }
+      });
+
+      // Hitung total biaya tak terduga
+      const unexpectedExpenses = await UnexpectedExpense.find({
+        categoryOrBranchId: branch._id,
+        categoryOrBranchModel: "Branch",
+      });
+
+      const totalExpenses = unexpectedExpenses.reduce((sum, expense) => {
+        return sum + expense.amount;
+      }, 0);
+
+      // Hitung pendapatan bersih
+      const totalIncome = income - totalExpenses;
+
+      // Simpan ke NetIncome
+      if (income !== 0 || totalExpenses !== 0) {
+        await NetIncome.findOneAndUpdate(
+          {
+            categoryOrBranchId: branch._id,
+            categoryOrBranchModel: "Branch",
+            date: today,
+          },
+          { income, totalExpenses, totalIncome },
+          { upsert: true, new: true }
+        );
+      }
+    }
+
+    console.log("NetIncome calculated for all categories and branches.");
+  } catch (error) {
+    console.error("Error calculating NetIncome for all:", error.message);
   }
 };

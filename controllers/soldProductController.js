@@ -1,5 +1,5 @@
 // controllers/soldProductController.js
-const { SoldProduct, Product } = require("../models_schema");
+const { SoldProduct, Product } = require("../models/models_schema");
 
 // Tambah jumlah produk terjual
 const addSoldProduct = async (req, res) => {
@@ -19,12 +19,10 @@ const addSoldProduct = async (req, res) => {
       // Update jumlah terjual jika sudah ada data
       existingSoldProduct.amountSold += amountSold;
       await existingSoldProduct.save();
-      return res
-        .status(200)
-        .json({
-          message: "Sold product updated successfully",
-          soldProduct: existingSoldProduct,
-        });
+      return res.status(200).json({
+        message: "Sold product updated successfully",
+        soldProduct: existingSoldProduct,
+      });
     }
 
     // Tambah data baru jika belum ada

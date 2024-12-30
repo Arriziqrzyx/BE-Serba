@@ -2,18 +2,23 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const moment = require("moment-timezone"); // Tambahkan moment-timezone
 require("dotenv").config();
+
+// Set default timezone ke Asia/Jakarta
+moment.tz.setDefault("Asia/Jakarta");
 
 // Routes
 const categoryRoutes = require("./routes/categoryRoutes");
 const productRoutes = require("./routes/productRoutes");
 const branchRoutes = require("./routes/branchRoutes");
 const soldProductRoutes = require("./routes/soldProductRoutes");
-const reportRoutes = require("./routes/reportRoutes");
 const incomeRoutes = require("./routes/incomeRoutes");
 const unexpectedExpenseRoute = require("./routes/unexpectedExpenseRoute");
+const dailyReportRoutes = require("./routes/dailyReportRoutes");
 
-// const cronJobs = require("./cronJobs");
+// const { calculateNetIncomeForAll } = require("./controllers/incomeController");
+const scheduleDailyReport = require("./cron/dailyReportCron");
 
 const app = express();
 
@@ -28,7 +33,12 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("MongoDB Connected"))
+  .then(async () => {
+    console.log("MongoDB Connected");
+
+    // Call the function to calculate net income for all
+    // await calculateNetIncomeForAll();
+  })
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Routes
@@ -36,9 +46,12 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/branches", branchRoutes);
 app.use("/api/sold-products", soldProductRoutes);
-app.use("/api/reports", reportRoutes);
 app.use("/api/income", incomeRoutes);
 app.use("/api/unexpected-expenses", unexpectedExpenseRoute);
+app.use("/api/daily-report", dailyReportRoutes);
+
+// Jalankan cron job
+scheduleDailyReport();
 
 // Server
 const PORT = process.env.PORT || 5000;

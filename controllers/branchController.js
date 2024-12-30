@@ -1,5 +1,5 @@
 // controllers/branchController.js
-const { Branch, Category } = require("../models_schema");
+const { Branch, Category } = require("../models/models_schema");
 
 // Tambah cabang baru
 const createBranch = async (req, res) => {

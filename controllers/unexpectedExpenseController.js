@@ -1,4 +1,4 @@
-const { UnexpectedExpense } = require("../models_schema");
+const { UnexpectedExpense } = require("../models/models_schema");
 
 // Menambahkan biaya tidak terduga
 exports.addUnexpectedExpense = async (req, res) => {
