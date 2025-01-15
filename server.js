@@ -50,9 +50,16 @@ app.use("/api/income", incomeRoutes);
 app.use("/api/unexpected-expenses", unexpectedExpenseRoute);
 app.use("/api/daily-report", dailyReportRoutes);
 
+app.use((req, res, next) => {
+  console.log(`[Request] ${req.method} ${req.url} - Headers:`, req.headers);
+  next();
+});
+
 // Jalankan cron job
 scheduleDailyReport();
 
 // Server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const PORT = process.env.PORT;
+app.listen(PORT, "0.0.0.0", () =>
+  console.log(`Server running on port ${PORT}`)
+);

@@ -121,7 +121,7 @@ exports.getTotalIncomeAllCategories = async (req, res) => {
 };
 
 // Inisialisasi semua data NetIncome saat server berjalan
-exports.calculateNetIncomeForAll = async () => {
+exports.calculateNetIncomeForAll = async (req, res) => {
   try {
     const today = new Date().toISOString().split("T")[0]; // Format YYYY-MM-DD
 
@@ -161,7 +161,7 @@ exports.calculateNetIncomeForAll = async () => {
       }, 0);
 
       // Hitung pendapatan bersih
-      const totalIncome = income - totalExpenses;
+      const totalIncome = income + totalExpenses;
 
       // Simpan ke NetIncome
       if (income !== 0 || totalExpenses !== 0) {
@@ -210,7 +210,7 @@ exports.calculateNetIncomeForAll = async () => {
       }, 0);
 
       // Hitung pendapatan bersih
-      const totalIncome = income - totalExpenses;
+      const totalIncome = income + totalExpenses;
 
       // Simpan ke NetIncome
       if (income !== 0 || totalExpenses !== 0) {
@@ -226,8 +226,10 @@ exports.calculateNetIncomeForAll = async () => {
       }
     }
 
-    console.log("NetIncome calculated for all categories and branches.");
+    // console.log("NetIncome calculated for all categories and branches.");
+    res.status(200).json({ message: "NetIncome calculated successfully." }); // Kirim status 200
   } catch (error) {
-    console.error("Error calculating NetIncome for all:", error.message);
+    // console.error("Error calculating NetIncome for all:", error.message);
+    res.status(500).json({ message: "Error calculating NetIncome." }); // Tangani error dengan status 500
   }
 };

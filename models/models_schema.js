@@ -118,17 +118,27 @@ const dailyReportSchema = new mongoose.Schema({
   income: { type: Number, required: true },
   totalUnexpectedExpenses: { type: Number, required: true },
   netIncome: { type: Number, required: true },
-  branches: [
-    {
-      branchId: { type: mongoose.Schema.Types.ObjectId, ref: "Branch" },
-      income: { type: Number },
-      totalExpenses: { type: Number },
-      totalIncome: { type: Number },
-    },
-  ],
 });
 
 const DailyReport = mongoose.model("DailyReport", dailyReportSchema);
+
+const netIncomeMonthlySchema = new mongoose.Schema({
+  categoryId: {
+    type: mongoose.Types.ObjectId,
+    ref: "Category",
+    required: true,
+    unique: true,
+  },
+  netIncome: {
+    type: Number,
+    default: 0,
+  },
+});
+
+const NetIncomeMonthly = mongoose.model(
+  "NetIncomeMonthly",
+  netIncomeMonthlySchema
+);
 
 module.exports = {
   Category,
@@ -138,4 +148,5 @@ module.exports = {
   UnexpectedExpense,
   NetIncome,
   DailyReport,
+  NetIncomeMonthly,
 };
