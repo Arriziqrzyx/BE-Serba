@@ -140,6 +140,73 @@ const NetIncomeMonthly = mongoose.model(
   netIncomeMonthlySchema
 );
 
+const operationalExpenseSchema = new mongoose.Schema({
+  category: {
+    type: String,
+    required: true,
+    enum: ["Gaji Karyawan", "Tagihan", "Perbaikan", "Lainnya"],
+  },
+  description: {
+    type: String,
+    required: true,
+  },
+  amount: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+  date: {
+    type: String, // Tanggal disimpan dalam format string
+    required: true,
+  },
+});
+
+const OperationalExpense = mongoose.model(
+  "OperationalExpense",
+  operationalExpenseSchema
+);
+
+const assetSchema = new mongoose.Schema({
+  assetName: { type: String, required: true },
+  assetPrice: { type: Number, required: true },
+  depreciationPeriod: { type: Number, required: true }, // in months
+  monthlyDepreciation: { type: Number, required: true },
+  purchaseDate: { type: Date, required: true },
+  depreciationStatus: { type: Boolean, default: true }, // active or not
+  depreciationEndDate: { type: Date, required: true },
+});
+
+const Asset = mongoose.model("Asset", assetSchema);
+
+const materialSchema = new mongoose.Schema({
+  materialName: { type: String, required: true },
+  pricePerUnit: { type: Number, required: true },
+  totalUnits: { type: Number, required: true },
+  purchaseDate: { type: Date, required: true },
+  usedUnits: { type: Number, default: 0 }, // Jumlah unit yang terpakai
+  month: { type: Number, required: true }, // Bulan data
+  year: { type: Number, required: true }, // Tahun data
+});
+
+// Menambahkan kolom virtual untuk menghitung nilai bahan secara dinamis
+materialSchema.virtual("unusedUnits").get(function () {
+  return this.totalUnits - this.usedUnits;
+});
+
+materialSchema.virtual("totalValue").get(function () {
+  return this.totalUnits * this.pricePerUnit;
+});
+
+materialSchema.virtual("usedValue").get(function () {
+  return this.usedUnits * this.pricePerUnit;
+});
+
+materialSchema.virtual("unusedValue").get(function () {
+  return this.unusedUnits * this.pricePerUnit;
+});
+
+const Material = mongoose.model("Material", materialSchema);
+
 module.exports = {
   Category,
   Product,
@@ -149,4 +216,7 @@ module.exports = {
   NetIncome,
   DailyReport,
   NetIncomeMonthly,
+  OperationalExpense,
+  Asset,
+  Material,
 };

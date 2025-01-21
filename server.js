@@ -8,6 +8,9 @@ require("dotenv").config();
 // Set default timezone ke Asia/Jakarta
 moment.tz.setDefault("Asia/Jakarta");
 
+// Mengimpor middleware dari folder middleware
+const checkApiKey = require("./middleware/apiKey");
+
 // Routes
 const categoryRoutes = require("./routes/categoryRoutes");
 const productRoutes = require("./routes/productRoutes");
@@ -16,9 +19,13 @@ const soldProductRoutes = require("./routes/soldProductRoutes");
 const incomeRoutes = require("./routes/incomeRoutes");
 const unexpectedExpenseRoute = require("./routes/unexpectedExpenseRoute");
 const dailyReportRoutes = require("./routes/dailyReportRoutes");
+const OperationalExpenseRoutes = require("./routes/operationalExpenseRoutes");
+const assetRoutes = require("./routes/assetsRoutes");
+const materialRoutes = require("./routes/materialRoutes");
 
 // const { calculateNetIncomeForAll } = require("./controllers/incomeController");
 const scheduleDailyReport = require("./cron/dailyReportCron");
+const scheduleAssetsCheck = require("./cron/monthlyAssetsCron");
 
 const app = express();
 
@@ -42,13 +49,16 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Routes
-app.use("/api/categories", categoryRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/branches", branchRoutes);
-app.use("/api/sold-products", soldProductRoutes);
-app.use("/api/income", incomeRoutes);
-app.use("/api/unexpected-expenses", unexpectedExpenseRoute);
-app.use("/api/daily-report", dailyReportRoutes);
+app.use("/api/categories", checkApiKey, categoryRoutes);
+app.use("/api/products", checkApiKey, productRoutes);
+app.use("/api/branches", checkApiKey, branchRoutes);
+app.use("/api/sold-products", checkApiKey, soldProductRoutes);
+app.use("/api/income", checkApiKey, incomeRoutes);
+app.use("/api/unexpected-expenses", checkApiKey, unexpectedExpenseRoute);
+app.use("/api/daily-report", checkApiKey, dailyReportRoutes);
+app.use("/api/operational-expenses", checkApiKey, OperationalExpenseRoutes);
+app.use("/api/assets", checkApiKey, assetRoutes);
+app.use("/api/materials", checkApiKey, materialRoutes);
 
 app.use((req, res, next) => {
   console.log(`[Request] ${req.method} ${req.url} - Headers:`, req.headers);
@@ -57,6 +67,7 @@ app.use((req, res, next) => {
 
 // Jalankan cron job
 scheduleDailyReport();
+scheduleAssetsCheck();
 
 // Server
 const PORT = process.env.PORT;
