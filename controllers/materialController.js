@@ -86,10 +86,12 @@ const getMonthlyMaterials = async (req, res) => {
     // Hitung total nilai
     let totalUsedValue = 0;
     let totalUnusedValue = 0;
+    let grandTotalValue = 0;
 
     const formattedMaterials = materials.map((material) => {
       totalUsedValue += material.usedValue;
       totalUnusedValue += material.unusedValue;
+      grandTotalValue += material.totalValue;
 
       return {
         _id: material._id,
@@ -108,6 +110,7 @@ const getMonthlyMaterials = async (req, res) => {
       materials: formattedMaterials,
       totalUsedValue,
       totalUnusedValue,
+      grandTotalValue,
     });
   } catch (error) {
     res.status(500).json({ message: "Error fetching materials", error });

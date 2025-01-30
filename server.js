@@ -10,6 +10,7 @@ moment.tz.setDefault("Asia/Jakarta");
 
 // Mengimpor middleware dari folder middleware
 const checkApiKey = require("./middleware/apiKey");
+const validateToken = require("./middleware/tokenValidation");
 
 // Routes
 const categoryRoutes = require("./routes/categoryRoutes");
@@ -22,10 +23,12 @@ const dailyReportRoutes = require("./routes/dailyReportRoutes");
 const OperationalExpenseRoutes = require("./routes/operationalExpenseRoutes");
 const assetRoutes = require("./routes/assetsRoutes");
 const materialRoutes = require("./routes/materialRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 // const { calculateNetIncomeForAll } = require("./controllers/incomeController");
 const scheduleDailyReport = require("./cron/dailyReportCron");
 const scheduleAssetsCheck = require("./cron/monthlyAssetsCron");
+const autoLogout = require("./cron/autoLogoutCron");
 
 const app = express();
 
@@ -49,25 +52,37 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Routes
-app.use("/api/categories", checkApiKey, categoryRoutes);
-app.use("/api/products", checkApiKey, productRoutes);
-app.use("/api/branches", checkApiKey, branchRoutes);
-app.use("/api/sold-products", checkApiKey, soldProductRoutes);
-app.use("/api/income", checkApiKey, incomeRoutes);
-app.use("/api/unexpected-expenses", checkApiKey, unexpectedExpenseRoute);
-app.use("/api/daily-report", checkApiKey, dailyReportRoutes);
-app.use("/api/operational-expenses", checkApiKey, OperationalExpenseRoutes);
-app.use("/api/assets", checkApiKey, assetRoutes);
-app.use("/api/materials", checkApiKey, materialRoutes);
+app.use("/api/categories", checkApiKey, validateToken, categoryRoutes);
+app.use("/api/products", checkApiKey, validateToken, productRoutes);
+app.use("/api/branches", checkApiKey, validateToken, branchRoutes);
+app.use("/api/sold-products", checkApiKey, validateToken, soldProductRoutes);
+app.use("/api/income", checkApiKey, validateToken, incomeRoutes);
+app.use("/api/daily-report", checkApiKey, validateToken, dailyReportRoutes);
+app.use("/api/assets", checkApiKey, validateToken, assetRoutes);
+app.use("/api/materials", checkApiKey, validateToken, materialRoutes);
+app.use("/api/auth", checkApiKey, authRoutes);
+app.use(
+  "/api/unexpected-expenses",
+  checkApiKey,
+  validateToken,
+  unexpectedExpenseRoute
+);
+app.use(
+  "/api/operational-expenses",
+  checkApiKey,
+  validateToken,
+  OperationalExpenseRoutes
+);
 
-app.use((req, res, next) => {
-  console.log(`[Request] ${req.method} ${req.url} - Headers:`, req.headers);
-  next();
-});
+// app.use((req, res, next) => {
+//   console.log(`[Request] ${req.method} ${req.url} - Headers:`, req.headers);
+//   next();
+// });
 
 // Jalankan cron job
 scheduleDailyReport();
 scheduleAssetsCheck();
+autoLogout();
 
 // Server
 const PORT = process.env.PORT;

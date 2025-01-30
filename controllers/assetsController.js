@@ -120,20 +120,17 @@ const processDepreciationCheck = async (req = null, res = null) => {
       const { depreciationEndDate, _id, depreciationStatus } = asset;
       const endDate = new Date(depreciationEndDate);
 
-      // Tentukan remainingDepreciation berdasarkan status dan tanggal
       let remainingDepreciation;
+
       if (!depreciationStatus) {
-        // Jika status sudah false, set langsung ke "Habis"
         remainingDepreciation = "Habis";
       } else if (endDate <= today) {
-        // Jika penyusutan selesai tapi status masih true, ubah status ke false
         remainingDepreciation = "Habis";
         return Asset.findByIdAndUpdate(_id, {
           depreciationStatus: false,
           remainingDepreciation,
         });
       } else {
-        // Hitung sisa masa penyusutan jika penyusutan belum selesai
         const totalMonths =
           (endDate.getFullYear() - today.getFullYear()) * 12 +
           (endDate.getMonth() - today.getMonth());
@@ -148,21 +145,28 @@ const processDepreciationCheck = async (req = null, res = null) => {
               }`
             : "0 bulan";
 
-        // Perbarui remainingDepreciation jika belum selesai
         return Asset.findByIdAndUpdate(_id, {
           remainingDepreciation,
         });
       }
     });
 
-    // Tunggu semua proses selesai
     await Promise.all(updates);
 
-    res.status(200).json({ message: "Depreciation check completed." });
+    // Hanya kirim respons jika res tersedia
+    if (res) {
+      res.status(200).json({ message: "Depreciation check completed." });
+    } else {
+      console.log("Depreciation check completed.");
+    }
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error running depreciation check", error });
+    if (res) {
+      res
+        .status(500)
+        .json({ message: "Error running depreciation check", error });
+    } else {
+      console.error("Error running depreciation check:", error);
+    }
   }
 };
 

@@ -2,7 +2,7 @@ const cron = require("node-cron");
 const { processDepreciationCheck } = require("../controllers/assetsController");
 
 const scheduleAssetsCheck = () => {
-  // Jalankan setiap awal bulan (tanggal 1 pukul 00:00)
+  // Jalankan setiap hari pada pukul 0000
   cron.schedule("0 0 * * *", async () => {
     console.log("Running depreciation check...");
 

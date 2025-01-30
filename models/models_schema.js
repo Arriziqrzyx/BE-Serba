@@ -207,6 +207,17 @@ materialSchema.virtual("unusedValue").get(function () {
 
 const Material = mongoose.model("Material", materialSchema);
 
+const userSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  name: { type: String, required: true },
+  role: { type: String, enum: ["admin", "staff"], required: true },
+  branch: { type: String, default: null },
+  currentSessionToken: { type: String, default: null },
+});
+
+const User = mongoose.model("User", userSchema);
+
 module.exports = {
   Category,
   Product,
@@ -219,4 +230,5 @@ module.exports = {
   OperationalExpense,
   Asset,
   Material,
+  User,
 };
