@@ -3,6 +3,8 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const moment = require("moment-timezone"); // Tambahkan moment-timezone
+const fs = require("fs");
+const https = require("https"); // Tambahkan ini
 require("dotenv").config();
 
 // Set default timezone ke Asia/Jakarta
@@ -24,11 +26,13 @@ const OperationalExpenseRoutes = require("./routes/operationalExpenseRoutes");
 const assetRoutes = require("./routes/assetsRoutes");
 const materialRoutes = require("./routes/materialRoutes");
 const authRoutes = require("./routes/authRoutes");
+const recapsRoutes = require("./routes/recapsRoutes");
 
 // const { calculateNetIncomeForAll } = require("./controllers/incomeController");
 const scheduleDailyReport = require("./cron/dailyReportCron");
 const scheduleAssetsCheck = require("./cron/monthlyAssetsCron");
 const autoLogout = require("./cron/autoLogoutCron");
+const generateRecaps = require("./cron/monthlyGenerateRecap");
 
 const app = express();
 
@@ -52,6 +56,10 @@ mongoose
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Routes
+app.get("/", (req, res) => {
+  res.send("Service API is running...");
+});
+
 app.use("/api/categories", checkApiKey, validateToken, categoryRoutes);
 app.use("/api/products", checkApiKey, validateToken, productRoutes);
 app.use("/api/branches", checkApiKey, validateToken, branchRoutes);
@@ -60,6 +68,7 @@ app.use("/api/income", checkApiKey, validateToken, incomeRoutes);
 app.use("/api/daily-report", checkApiKey, validateToken, dailyReportRoutes);
 app.use("/api/assets", checkApiKey, validateToken, assetRoutes);
 app.use("/api/materials", checkApiKey, validateToken, materialRoutes);
+app.use("/api/recaps", checkApiKey, validateToken, recapsRoutes);
 app.use("/api/auth", checkApiKey, authRoutes);
 app.use(
   "/api/unexpected-expenses",
@@ -74,18 +83,26 @@ app.use(
   OperationalExpenseRoutes
 );
 
-// app.use((req, res, next) => {
-//   console.log(`[Request] ${req.method} ${req.url} - Headers:`, req.headers);
-//   next();
-// });
-
 // Jalankan cron job
 scheduleDailyReport();
 scheduleAssetsCheck();
 autoLogout();
+generateRecaps();
+
+// Baca SSL dari Cloudflare
+const sslOptions = {
+  key: fs.readFileSync("/etc/ssl/cloudflare/api_kedaikopiseruput.key"),
+  cert: fs.readFileSync("/etc/ssl/cloudflare/api_kedaikopiseruput.pem"),
+};
 
 // Server
-const PORT = process.env.PORT;
-app.listen(PORT, "0.0.0.0", () =>
-  console.log(`Server running on port ${PORT}`)
-);
+https.createServer(sslOptions, app).listen(PORT, "0.0.0.0", () => {
+  console.log(
+    `🚀 Secure API Server running on https://api.kedaikopiseruput.co.id:${PORT}`
+  );
+});
+
+// app.use((req, res, next) => {
+//   console.log(`[Request] ${req.method} ${req.url} - Headers:`, req.headers);
+//   next();
+// });

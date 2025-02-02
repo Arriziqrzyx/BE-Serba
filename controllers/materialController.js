@@ -1,31 +1,26 @@
 const { Material } = require("../models/models_schema");
+const moment = require("moment-timezone");
 
 // Tambah Data Bahan Baru
 const addMaterial = async (req, res) => {
   try {
     const { materialName, pricePerUnit, totalUnits, purchaseDate } = req.body;
 
-    // Pastikan data wajib diisi
+    const today = moment.tz("Asia/Jakarta").startOf("day").format(); // ISO 8601 String
+
+    // Validasi input
     if (!materialName || !pricePerUnit || !totalUnits || !purchaseDate) {
       return res.status(400).json({ message: "All fields are required" });
     }
-
-    // Dapatkan bulan dan tahun dari tanggal pembelian
-    const purchaseDateObj = new Date(purchaseDate);
-    const month = purchaseDateObj.getMonth() + 1; // Bulan dalam range 0-11
-    const year = purchaseDateObj.getFullYear();
 
     const material = new Material({
       materialName,
       pricePerUnit,
       totalUnits,
-      purchaseDate,
-      month,
-      year,
+      purchaseDate: today, // Simpan sebagai Date
     });
 
     const savedMaterial = await material.save();
-
     res.status(201).json({
       message: "Material added successfully",
       material: savedMaterial,
@@ -78,9 +73,23 @@ const getMonthlyMaterials = async (req, res) => {
       return res.status(400).json({ message: "Month and year are required" });
     }
 
+    // Pastikan month dan day menggunakan dua digit
+    const formattedMonth = String(month).padStart(2, "0"); // Misal: "1" -> "01"
+    const formattedDay = "01"; // Tanggal selalu "01" untuk awal bulan
+
+    // Buat range tanggal untuk bulan dan tahun yang diminta
+    const startDate = moment
+      .tz(`${year}-${formattedMonth}-${formattedDay}`, "Asia/Jakarta")
+      .startOf("day")
+      .format();
+    const endDate = moment
+      .tz(`${year}-${formattedMonth}-${formattedDay}`, "Asia/Jakarta")
+      .endOf("month")
+      .format();
+
+    // Cari data berdasarkan range tanggal
     const materials = await Material.find({
-      month: parseInt(month),
-      year: parseInt(year),
+      purchaseDate: { $gte: startDate, $lte: endDate },
     });
 
     // Hitung total nilai
@@ -103,6 +112,7 @@ const getMonthlyMaterials = async (req, res) => {
         totalValue: material.totalValue,
         usedValue: material.usedValue,
         unusedValue: material.unusedValue,
+        purchaseDate: material.purchaseDate,
       };
     });
 

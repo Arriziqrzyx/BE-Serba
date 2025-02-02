@@ -99,7 +99,7 @@ const dailyReportSchema = new mongoose.Schema({
     required: true,
     enum: ["Category", "Branch"],
   },
-  date: { type: String, required: true }, // Ubah tipe data menjadi String
+  date: { type: String, required: true },
   products: [
     {
       productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
@@ -169,10 +169,10 @@ const OperationalExpense = mongoose.model(
 const assetSchema = new mongoose.Schema({
   assetName: { type: String, required: true },
   assetPrice: { type: Number, required: true },
-  depreciationPeriod: { type: Number, required: true }, // in months
+  depreciationPeriod: { type: Number, required: true },
   monthlyDepreciation: { type: Number, required: true },
   purchaseDate: { type: Date, required: true },
-  depreciationStatus: { type: Boolean, default: true }, // active or not
+  depreciationStatus: { type: Boolean, default: true },
   depreciationEndDate: { type: Date, required: true },
 });
 
@@ -182,13 +182,11 @@ const materialSchema = new mongoose.Schema({
   materialName: { type: String, required: true },
   pricePerUnit: { type: Number, required: true },
   totalUnits: { type: Number, required: true },
-  purchaseDate: { type: Date, required: true },
-  usedUnits: { type: Number, default: 0 }, // Jumlah unit yang terpakai
-  month: { type: Number, required: true }, // Bulan data
-  year: { type: Number, required: true }, // Tahun data
+  purchaseDate: { type: String, required: true },
+  usedUnits: { type: Number, default: 0 },
 });
 
-// Menambahkan kolom virtual untuk menghitung nilai bahan secara dinamis
+// Virtual untuk menghitung nilai bahan
 materialSchema.virtual("unusedUnits").get(function () {
   return this.totalUnits - this.usedUnits;
 });
@@ -218,6 +216,16 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 
+const monthlyReportSchema = new mongoose.Schema({
+  month: { type: String, required: true, unique: true },
+  dailyReports: { type: Array, default: [] },
+  materials: { type: Array, default: [] },
+  operationalExpenses: { type: Array, default: [] },
+  assets: { type: Array, default: [] },
+});
+
+const MonthlyReport = mongoose.model("MonthlyReport", monthlyReportSchema);
+
 module.exports = {
   Category,
   Product,
@@ -231,4 +239,5 @@ module.exports = {
   Asset,
   Material,
   User,
+  MonthlyReport,
 };
